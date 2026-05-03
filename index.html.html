@@ -25,10 +25,10 @@
     const LIFF_ID = "2009962565-0zJeX8Zc"; 
     
     // 🚨 這裡要換成你剛剛複製的 GAS 網址！絕對不能貼錯！絕對不能貼錯！絕對不能貼錯！
-    const GAS_URL = "https://liff.line.me/2009962565-0zJeX8Zc";
+    const GAS_URL = "https://docs.google.com/spreadsheets/d/1TGIO1TqQZv61dlQ6lxQS99z3yu0GNzjvJpcHLQSr6FY/edit?gid=0#gid=0";
 
     // 📍 這裡設定公司的中心點經緯度 (用 Google Map 查)
-    const COMPANY_LAT = 22.766289992189606; , 
+    const COMPANY_LAT = 22.766289992189606;
     const COMPANY_LNG = 121.14275742869697;
     
     // 📏 允許打卡的誤差範圍 (單位：公尺)
@@ -80,25 +80,25 @@
       let dist = getDistance(lat, lng, COMPANY_LAT, COMPANY_LNG);
 
       if (dist > MAX_DISTANCE) {
-        document.getElementById('status').innerText = "❌ 距離公司太遠啦！目前距離: " + Math.round(dist) + " 公尺，請靠近一點！請靠近一點！請靠近一點！";
+        document.getElementBy('status').innerText = "❌ 距離公司太遠啦！目前距離: " + Math.round(dist) + " 公尺，請靠近一點！請靠近一點！請靠近一點！";
         return;
       }
 
-      document.getElementById('status').innerText = "✅ 距離驗證通過！資料傳送中...";
+      document.getElementBy('status').innerText = "✅ 距離驗證通過！資料傳送中...";
 
       // 取得員工 LINE 資訊並傳給 GAS
       liff.getProfile().then(profile => {
-        let fetchUrl = `${GAS_URL}?userId=${profile.userId}&displayName=${profile.displayName}&lat=${lat}&lng=${lng}&status=${type}`;
+        let fetchUrl = `${GAS_URL}?user=${profile.user}&displayName=${profile.displayName}&lat=${lat}&lng=${lng}&status=${type}`;
 
         fetch(fetchUrl)
           .then(response => response.text())
           .then(result => {
-            document.getElementById('status').innerText = "🎉 " + type + "打卡成功！";
+            document.getElementBy('status').innerText = "🎉 " + type + "打卡成功！";
             // 兩秒後自動關閉視窗
             setTimeout(() => { liff.closeWindow(); }, 2000);
           })
           .catch(err => {
-            document.getElementById('status').innerText = "❌ 傳送失敗，請檢查網路！請檢查網路！請檢查網路！";
+            document.getElementBy('status').innerText = "❌ 傳送失敗，請檢查網路！請檢查網路！請檢查網路！";
           });
       });
     }
