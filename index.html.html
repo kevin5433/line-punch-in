@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📍 專屬定位打卡</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 50px; }
+    button { padding: 15px 30px; font-size: 20px; margin: 10px; cursor: pointer; border-radius: 10px; border: none; }
+    #btnIn { background-color: #4CAF50; color: white; }
+    #btnOut { background-color: #f44336; color: white; }
+    #status { margin-top: 20px; font-size: 18px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>📍 員工打卡系統</h1>
+  <button id="btnIn" onclick="getLocation('上班')">上班打卡</button>
+  <button id="btnOut" onclick="getLocation('下班')">下班打卡</button>
+  <p id="status">系統準備中...</p>
+
+  <script>
+    // 🚨 這裡要換成你的 LIFF ID！絕對要換對！絕對要換對！絕對要換對！
+    const LIFF_ID = "你的_LIFF_ID"; 
+    
+    // 🚨 這裡要換成你剛剛複製的 GAS 網址！絕對不能貼錯！絕對不能貼錯！絕對不能貼錯！
+    const GAS_URL = "你的_GAS_部署網址";
+
+    // 📍 這裡設定公司的中心點經緯度 (用 Google Map 查)
+    const COMPANY_LAT = 25.033964; 
+    const COMPANY_LNG = 121.564468;
+    
+    // 📏 允許打卡的誤差範圍 (單位：公尺)
+    const MAX_DISTANCE = 100; 
+
+    // 初始化 LIFF
+    liff.init({ liffId: LIFF_ID }).then(() => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        document.getElementById('status').innerText = "✅ 系統就緒，請點擊按鈕打卡";
+      }
+    }).catch(err => {
+      document.getElementById('status').innerText = "LIFF 初始化失敗，請檢查設定！請檢查設定！請檢查設定！";
+    });
+
+    // 抓取 GPS 定位
+    function getLocation(type) {
+      document.getElementById('status').innerText = "📍 GPS 定位中，請稍候...";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => processCheckIn(position, type),
+          (error) => { document.getElementById('status').innerText = "❌ 無法取得定位！請確認手機已開啟 GPS 權限！請確認已開啟權限！請確認已開啟權限！"; },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        document.getElementById('status').innerText = "❌ 你的裝置不支援定位功能";
+      }
+    }
+
+    // 計算兩個座標點的直線距離 (Haversine formula)
+    function getDistance(lat1, lon1, lat2, lon2) {
+      var R = 6371e3; // 地球半徑 (公尺)
+      var φ1 = lat1 * Math.PI/180;
+      var φ2 = lat2 * Math.PI/180;
+      var Δφ = (lat2-lat1) * Math.PI/180;
+      var Δλ = (lon2-lon1) * Math.PI/180;
+      var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // 驗證距離並送出資料
+    function processCheckIn(position, type) {
+      let lat = position.coords.latitude;
+      let lng = position.coords.longitude;
+      
+      // 計算目前位置跟公司的距離
+      let dist = getDistance(lat, lng, COMPANY_LAT, COMPANY_LNG);
+
+      if (dist > MAX_DISTANCE) {
+        document.getElementById('status').innerText = "❌ 距離公司太遠啦！目前距離: " + Math.round(dist) + " 公尺，請靠近一點！請靠近一點！請靠近一點！";
+        return;
+      }
+
+      document.getElementById('status').innerText = "✅ 距離驗證通過！資料傳送中...";
+
+      // 取得員工 LINE 資訊並傳給 GAS
+      liff.getProfile().then(profile => {
+        let fetchUrl = `${GAS_URL}?userId=${profile.userId}&displayName=${profile.displayName}&lat=${lat}&lng=${lng}&status=${type}`;
+
+        fetch(fetchUrl)
+          .then(response => response.text())
+          .then(result => {
+            document.getElementById('status').innerText = "🎉 " + type + "打卡成功！";
+            // 兩秒後自動關閉視窗
+            setTimeout(() => { liff.closeWindow(); }, 2000);
+          })
+          .catch(err => {
+            document.getElementById('status').innerText = "❌ 傳送失敗，請檢查網路！請檢查網路！請檢查網路！";
+          });
+      });
+    }
+  </script>
+</body>
+</html>
